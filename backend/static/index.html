@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>JARVIS AI Assistant</title>
+  
+  <!-- PWA Meta -->
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#00F0FF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JARVIS">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <link rel="apple-touch-icon" href="/static/icon.svg">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+  <!-- Top App Bar -->
+  <header class="app-header">
+    <div class="logo-group">
+      <img src="/static/icon.svg" alt="JARVIS" class="logo-icon">
+      <div class="logo-title">JARVIS</div>
+      <div class="logo-tag">V10.0</div>
+    </div>
+    <div id="host-badge" class="host-badge">
+      <span class="status-dot"></span>
+      <span id="host-status-text">ONLINE</span>
+    </div>
+  </header>
+
+  <!-- Mic Permission Instruction Modal -->
+  <div id="mic-help-modal" class="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+    <div style="background:#0b1528; border:1px solid #00F0FF; border-radius:16px; padding:24px; max-width:420px; width:100%; box-shadow:0 0 30px rgba(0,240,255,0.3); color:#fff; font-family:sans-serif;">
+      <h3 style="margin-top:0; color:#00F0FF; display:flex; align-items:center; gap:8px;">
+        🎙️ Enable Microphone on Mobile
+      </h3>
+      <p style="font-size:14px; line-height:1.5; color:#cbd5e1;">
+        Mobile Chrome blocks microphone on local Wi-Fi IP addresses (<code>http://192.168.x.x</code>) by default for security.
+      </p>
+      <div style="background:#040914; border-radius:8px; padding:12px; margin:12px 0; font-size:13px; line-height:1.6; border-left:3px solid #10B981;">
+        <strong>Quick 30-sec Fix in Mobile Chrome:</strong><br>
+        1. Open a new tab and paste:<br>
+        <code style="color:#FBBF24; word-break:break-all;">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code><br>
+        2. In the text box, enter:<br>
+        <code style="color:#00F0FF;">http://192.168.1.36:8000</code><br>
+        3. Change dropdown to <strong>Enabled</strong> & tap <strong>Relaunch</strong>.
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button id="btn-close-mic-modal" style="flex:1; padding:10px; background:#1e293b; color:#fff; border:1px solid #475569; border-radius:8px; cursor:pointer; font-weight:600;">Got It</button>
+        <button id="btn-switch-to-chat" style="flex:1; padding:10px; background:#00F0FF; color:#040914; border:none; border-radius:8px; cursor:pointer; font-weight:700;">Use Chat Tab 💬</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Content Containers -->
+  <main class="tab-content">
+
+    <!-- 1. TALK SCREEN -->
+    <section id="screen-talk" class="screen active">
+      <div class="talk-container">
+        <!-- Arc Reactor Visualizer -->
+        <div id="arc-reactor" class="arc-reactor-wrapper">
+          <div class="arc-ring-outer"></div>
+          <div class="arc-ring-mid"></div>
+          <div class="arc-ring-inner"></div>
+          <div class="arc-core">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+              <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div id="talk-status" class="talk-status">TAP ARC REACTOR TO SPEAK</div>
+        <div id="talk-hint" class="talk-hint" style="cursor:pointer;">Edge-TTS speech synthesis active</div>
+
+        <!-- Voice Live Transcript Box -->
+        <div class="talk-transcript-box">
+          <div class="talk-label">YOU SAID:</div>
+          <div id="user-speech" class="talk-text">"Tap the reactor to give voice commands..."</div>
+          
+          <div class="talk-label" style="color:var(--emerald);">JARVIS:</div>
+          <div id="jarvis-speech" class="talk-text">"Standing by, Sir."</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. CHAT SCREEN -->
+    <section id="screen-chat" class="screen">
+      <div class="chat-container">
+        <div class="messages-list" id="messages-list">
+          <div class="message-bubble assistant">
+            <div class="message-header">⚡ JARVIS</div>
+            <div>Hello! I am JARVIS, your personal AI assistant. How may I assist you today?</div>
+          </div>
+        </div>
+
+        <!-- Suggestion Chips -->
+        <div class="quick-chips">
+          <button class="chip-btn">Laptop Battery & CPU?</button>
+          <button class="chip-btn">List my pending tasks</button>
+          <button class="chip-btn">What's the weather in Chennai?</button>
+          <button class="chip-btn">Search latest AI news</button>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" class="chat-input" placeholder="Ask JARVIS anything..." autocomplete="off">
+          <button id="btn-send-chat" class="send-btn" title="Send">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. LAPTOP TELEMETRY SCREEN -->
+    <section id="screen-laptop" class="screen">
+      <div class="card-title">💻 LAPTOP HARDWARE TELEMETRY</div>
+      
+      <div class="telemetry-grid">
+        <!-- CPU Card -->
+        <div class="stat-box">
+          <div class="stat-label">CPU LOAD</div>
+          <div id="stat-cpu" class="stat-value">--%</div>
+          <div id="stat-cpu-cores" class="stat-sub">12 Cores</div>
+          <div class="stat-bar-bg">
+            <div id="bar-cpu" class="stat-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- RAM Card -->
+        <div class="stat-box">
+          <div class="stat-label">RAM USAGE</div>
+          <div id="stat-ram" class="stat-value">--%</div>
+          <div id="stat-ram-detail" class="stat-sub">-- GB / -- GB</div>
+          <div class="stat-bar-bg">
+            <div id="bar-ram" class="stat-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Battery Card -->
+        <div class="stat-box">
+          <div class="stat-label">BATTERY</div>
+          <div id="stat-battery" class="stat-value">--%</div>
+          <div id="stat-battery-state" class="stat-sub">Plugged In</div>
+          <div class="stat-bar-bg">
+            <div id="bar-battery" class="stat-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- SSD Disk Card -->
+        <div class="stat-box">
+          <div class="stat-label">SSD STORAGE</div>
+          <div id="stat-disk" class="stat-value">--%</div>
+          <div id="stat-disk-detail" class="stat-sub">-- GB Free</div>
+          <div class="stat-bar-bg">
+            <div id="bar-disk" class="stat-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Remote Actions Deck -->
+      <div class="glass-card">
+        <div class="card-title">⚡ REMOTE LAPTOP ACTIONS (V7)</div>
+        <div class="quick-action-grid">
+          <button class="action-tile-btn" onclick="executeRemote('launch_app', {app_name: 'vscode'})">
+            <span class="action-icon">🚀</span>
+            <span class="action-text">Open VS Code</span>
+          </button>
+          <button class="action-tile-btn danger" onclick="executeRemote('lock_workstation', {})">
+            <span class="action-icon">🔒</span>
+            <span class="action-text">Lock Laptop</span>
+          </button>
+          <button class="action-tile-btn" onclick="requestScreenshot()">
+            <span class="action-icon">📸</span>
+            <span class="action-text">Screen Snapshot</span>
+          </button>
+          <button class="action-tile-btn" onclick="executeRemote('volume', {volume_action: 'toggle_mute'})">
+            <span class="action-icon">🔇</span>
+            <span class="action-text">Mute / Unmute</span>
+          </button>
+          <button class="action-tile-btn" onclick="executeRemote('launch_app', {app_name: 'chrome'})">
+            <span class="action-icon">🌐</span>
+            <span class="action-text">Launch Chrome</span>
+          </button>
+          <button class="action-tile-btn" onclick="executeRemote('launch_app', {app_name: 'explorer'})">
+            <span class="action-icon">📁</span>
+            <span class="action-text">File Explorer</span>
+          </button>
+        </div>
+        <div id="remote-action-feedback" class="action-feedback"></div>
+      </div>
+
+      <!-- Live Laptop Screen Snapshot Preview -->
+      <div class="glass-card" id="screenshot-card" style="display:none;">
+        <div class="card-title" style="justify-content:space-between;">
+          <span>📸 LAPTOP SCREEN SNAPSHOT</span>
+          <button class="chip-btn" style="padding:4px 8px;font-size:0.75rem;" onclick="requestScreenshot()">🔄 Refresh</button>
+        </div>
+        <div style="text-align:center;overflow:hidden;border-radius:10px;border:1px solid var(--border-cyan);">
+          <img id="screenshot-img" src="" alt="Laptop Snapshot" style="width:100%;height:auto;display:block;">
+        </div>
+      </div>
+
+      <!-- System Specs -->
+      <div class="glass-card">
+        <div class="card-title">SYSTEM PLATFORM</div>
+        <div id="stat-os" style="font-size:1rem;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Windows 11 (AMD64)</div>
+        <div id="stat-time" style="font-size:0.8rem;color:var(--text-muted);">Syncing live telemetry...</div>
+      </div>
+    </section>
+
+    <!-- 4. MEMORY & TASKS SCREEN -->
+    <section id="screen-memory" class="screen">
+      <div class="glass-card">
+        <div class="card-title">🧠 MEMORY & ACTIVE TASKS</div>
+        <div id="tasks-list" style="margin-top: 10px;">
+          <div style="color:var(--text-muted);font-size:0.85rem;">Loading tasks from SQLite vector memory...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. SETTINGS SCREEN -->
+    <section id="screen-settings" class="screen">
+      <div class="glass-card">
+        <div class="card-title">⚙️ CLIENT SETTINGS</div>
+
+        <div class="setting-row">
+          <label class="setting-label">API Security Key</label>
+          <input type="password" id="setting-api-key" class="setting-input" value="jarvis_secure_key_123">
+        </div>
+
+        <div class="setting-row" style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">Auto-play Voice Responses</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">Speak answers automatically in voice mode</div>
+          </div>
+          <input type="checkbox" id="setting-auto-voice" checked style="width:20px;height:20px;accent-color:var(--cyan);">
+        </div>
+
+        <button id="btn-save-settings" class="action-btn">SAVE & VERIFY SETTINGS</button>
+        <div id="settings-test-status" style="margin-top:10px;font-size:0.85rem;text-align:center;font-weight:600;"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="talk">
+      <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <span>Talk</span>
+    </button>
+    <button class="nav-item" data-tab="chat">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Chat</span>
+    </button>
+    <button class="nav-item" data-tab="laptop">
+      <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+      <span>Laptop</span>
+    </button>
+    <button class="nav-item" data-tab="memory">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <span>Memory</span>
+    </button>
+    <button class="nav-item" data-tab="settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
